@@ -1,0 +1,72 @@
+[
+  {
+    "category": "green",
+    "subCategory": "pan-fired",
+    "name": "Long Jing",
+    "province": "Zhejiang",
+    "rating": 4.5
+  },
+  {
+    "category": "green",
+    "subCategory": "buds",
+    "name": "Pine Needle",
+    "province": "Hunan",
+    "rating": 4.0
+  },
+  {
+    "category": "oolong",
+    "subCategory": "Yencha",
+    "name": "Rou Gui",
+    "province": "Fujian",
+    "rating": 4.6
+  },
+  {
+    "category": "oolong",
+    "subCategory": "Yencha",
+    "name": "Shui Xian",
+    "province": "Fujian",
+    "rating": 4.0
+  },
+  {
+    "category": "oolong",
+    "subCategory": "Dancong",
+    "name": "Shui Xian",
+    "province": "Guangdong",
+    "rating": 4.5
+  },
+  {
+    "category": "oolong",
+    "subCategory": "ball-rolled",
+    "name": "Tie Guan Yin",
+    "province": "Fujian",
+    "rating": 3.5
+  },
+  {
+    "category": "black",
+    "subCategory": "buds",
+    "name": "Jin Jun Mei",
+    "province": "Fujian",
+    "rating": 3.8
+  },
+  {
+    "category": "black",
+    "subCategory": "assamica",
+    "name": "Yunnan Black",
+    "province": "Yunnan",
+    "rating": 3.9
+  },
+  {
+    "category": "puer",
+    "subCategory": "sheng",
+    "name": "Yiwu",
+    "province": "Yunnan",
+    "rating": 3.9
+  },
+  {
+    "category": "puer",
+    "subCategory": "shou",
+    "name": "Menghai",
+    "province": "Yunnan",
+    "rating": 3.9
+  }
+]
