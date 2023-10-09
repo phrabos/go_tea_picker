@@ -1,72 +1,82 @@
 [
   {
+    "id": "101",
     "category": "green",
     "subCategory": "pan-fired",
     "name": "Long Jing",
     "province": "Zhejiang",
-    "rating": 4.5
+    "weight": "55"
   },
   {
+    "id": "102",
     "category": "green",
     "subCategory": "buds",
     "name": "Pine Needle",
     "province": "Hunan",
-    "rating": 4.0
+    "weight": "135"
   },
   {
+    "id": "103",
     "category": "oolong",
     "subCategory": "Yencha",
     "name": "Rou Gui",
     "province": "Fujian",
-    "rating": 4.6
+    "weight": "40"
   },
   {
+    "id": "104",
     "category": "oolong",
     "subCategory": "Yencha",
     "name": "Shui Xian",
     "province": "Fujian",
-    "rating": 4.0
+    "weight": "90"
   },
   {
+    "id": "105",
     "category": "oolong",
     "subCategory": "Dancong",
-    "name": "Shui Xian",
+    "name": "Ya Shi Xiang",
     "province": "Guangdong",
-    "rating": 4.5
+    "weight": "9"
   },
   {
+    "id": "106",
     "category": "oolong",
     "subCategory": "ball-rolled",
     "name": "Tie Guan Yin",
     "province": "Fujian",
-    "rating": 3.5
+    "weight": "80"
   },
   {
+    "id": "107",
     "category": "black",
     "subCategory": "buds",
     "name": "Jin Jun Mei",
     "province": "Fujian",
-    "rating": 3.8
+    "weight": "35"
   },
   {
+    "id": "108",
     "category": "black",
     "subCategory": "assamica",
     "name": "Yunnan Black",
     "province": "Yunnan",
-    "rating": 3.9
+    "weight": "50"
   },
   {
+    "id": "109",
     "category": "puer",
     "subCategory": "sheng",
-    "name": "Yiwu",
+    "name": "941",
     "province": "Yunnan",
-    "rating": 3.9
+    "weight": "7"
   },
   {
+    "id": "110",
     "category": "puer",
     "subCategory": "shou",
-    "name": "Menghai",
+    "name": "Charlie",
     "province": "Yunnan",
-    "rating": 3.9
+    "weight": "250"
   }
 ]
