@@ -153,7 +153,11 @@ func main() {
 					config := columnConfig[header]
 					width := config.Width
 					sortOrder := config.SortOrder
-					columns[sortOrder] = table.Column{Title: header, Width: width}
+					if header == "Weight" {
+						columns[sortOrder] = table.Column{Title: header + "(g)", Width: width}
+					} else {
+						columns[sortOrder] = table.Column{Title: header, Width: width}
+					} 
 				}
 				} else {
 				types := values.Type()
@@ -181,7 +185,7 @@ func getColumnConfig() map[string]ColumnConfig{
 		"Category": { Width: 8, SortOrder: 2},
 		"Subcategory": { Width: 12, SortOrder: 3},
 		"Name": { Width: 20, SortOrder: 1},
-		"Weight": { Width: 6, SortOrder: 5},
+		"Weight": { Width: 10, SortOrder: 5},
 		"Province": { Width: 20, SortOrder: 4},
 	}
 }
