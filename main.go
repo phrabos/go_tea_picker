@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -23,53 +24,75 @@ BorderForeground(lipgloss.Color("240"))
 type model struct {
 	table table.Model
 	selectedTea string
+	spinner  spinner.Model
+	loading bool
+	quitting bool
+	teaInventory TeaInventory
 }
 
 func (m model) Init() tea.Cmd { 
-	return nil
+	return m.spinner.Tick
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 			case "esc":
-				if m.table.Focused() {
-					m.table.Blur()
-				} else {
-					m.table.Focus()
+					if m.table.Focused() {
+						m.table.Blur()
+						} else {
+							m.table.Focus()
+						}
+				case "q", "ctrl+c":
+					m.loading = true
+					return m, tea.Quit
+				case "e":
+					m.selectedTea = m.table.SelectedRow()[1]
+					return m, nil 
+				case "enter":
+					return m, tea.Batch(
+						tea.Printf("You selected %s", m.table.SelectedRow()[1]),
+					)
 				}
-			case "q", "ctrl+c":
-				return m, tea.Quit
-			case "e":
-				m.selectedTea = m.table.SelectedRow()[1]
-				return m, nil 
-			case "enter":
-				return m, tea.Batch(
-					tea.Printf("You selected %s", m.table.SelectedRow()[1]),
-				)
-		}
+		default:
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
 	}
 	m.table, _ = m.table.Update(msg)
-	return m, cmd
+	return m, nil
 }
 
 func (m model) View() string {
-	if m.selectedTea == "" {
+	str := fmt.Sprintf("\n\n   %s Loading Tea Inventory\n\n", m.spinner.View())
+	if m.loading {
+		return str
+	}
+	if m.quitting {
+		return str + "\n"
+	}
+	if !m.loading && m.selectedTea == "" {
 		return baseStyle.Render(m.table.View()) + "\n"
 		
 	}
 		return fmt.Sprintf("You selected %v", m.selectedTea)
 }
 
+func initialModel() model {
+	s := spinner.New()
+	s.Spinner = spinner.Points
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	return model{spinner: s, loading: true}
+}
+
 type TeaInventory struct {
-	Id string `json:"id"`
-	Name string `json:"name"`
-	Category string `json:"category"`
-	Subcategory string `json:"subCategory"`
-	Weight int `json:"weight"`
-	Province string `json:"province"`
+	Id string `bson:"_id"`
+	Name string `bson:"name"`
+	Category string `bson:"category"`
+	Subcategory string `bson:"subCategory"`
+	Weight int `bson:"weight"`
+	Province string `bson:"province"`
 }
 
 func main() {
@@ -93,7 +116,7 @@ func main() {
   if connectionErr := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); connectionErr != nil {
     panic(connectionErr)
   }
-  fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
+  // fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 
 	collection := client.Database("TeaCo").Collection("Inventory")
 	cursor, collectionErr := collection.Find(context.Background(), bson.D{{}})
@@ -109,9 +132,6 @@ func main() {
 		if decodeErr != nil {
 			log.Fatal(decodeErr)
 		} 
-		// var t TeaInventory = TeaInventory{
-		// 	Name: teaInventoryItem.Name,
-		// }
 		teaInventorySlice = append(teaInventorySlice, teaInventoryItem)
 	}
 
@@ -146,9 +166,9 @@ func main() {
 	// apply the styles to the table
 	t.SetStyles(s)
 	
-	m := model{table: t, selectedTea: ""}
+	// m := model{table: t, selectedTea: ""}
 
-	_, err := tea.NewProgram(m).Run()
+	_, err := tea.NewProgram(initialModel()).Run()
 	if err != nil {
 		fmt.Printf("error running tea app %v\n", err)
 		os.Exit(1)
@@ -239,14 +259,3 @@ func getFieldByHeader(t TeaInventory, header string) string {
 		return ""
 	}
 }
-
-	// rowsStub := []table.Row{
-	// 	{"101", "Li Shan", "oolong", "ball rolled", "55"},
-	// 	{"102", "Dong Ding", "oolong", "ball rolled", "140"},
-	// 	{"103", "Shui Xian", "oolong", "yencha", "75"},
-	// 	{"104", "Sencha", "green", "steamed", "9"},
-	// 	{"105", "Bai Mudan", "white", "", "50"},
-	// 	{"106", "941", "puerh", "sheng", "7"},
-	// 	{"107", "Charlie", "puerh", "shou", "155"},
-	// 	{"108", "Da Hong Pao", "oolong", "yencha", "65"},
-	// }
