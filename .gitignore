@@ -1,0 +1,34 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+
+# Folders
+_vendor/
+bin/
+pkg/
+
+# Output files
+*.exe
+*.test
+*.prof
+
+# Local binary files
+go.sum
+go.mod
+
+# Environment variable files
+.env
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Compiled Go programs
+*.out
+
+# Config file for Vgo
+vgo.lock
