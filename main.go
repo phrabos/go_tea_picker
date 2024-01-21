@@ -26,64 +26,137 @@ type model struct {
 	selectedTea string
 	spinner  spinner.Model
 	loading bool
-	quitting bool
-	teaInventory TeaInventory
+	initialized bool
+	teaInventory []TeaInventory
+	db *mongo.Client
 }
 
+// type InitialTick tea.Msg
 func (m model) Init() tea.Cmd { 
-	return m.spinner.Tick
+		return tea.Batch(
+			m.spinner.Tick,
+			fetchInitialData(m),
+		)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 			case "esc":
-					if m.table.Focused() {
-						m.table.Blur()
-						} else {
-							m.table.Focus()
-						}
-				case "q", "ctrl+c":
-					m.loading = true
-					return m, tea.Quit
-				case "e":
-					m.selectedTea = m.table.SelectedRow()[1]
-					return m, nil 
-				case "enter":
-					return m, tea.Batch(
-						tea.Printf("You selected %s", m.table.SelectedRow()[1]),
-					)
+				if m.table.Focused() {
+					m.table.Blur()
+				} else {
+					m.table.Focus()
 				}
-		default:
-			var cmd tea.Cmd
-			m.spinner, cmd = m.spinner.Update(msg)
-			return m, cmd
+			case "q", "ctrl+c":
+				return m, tea.Quit
+			case "enter":
+				m.selectedTea = m.table.SelectedRow()[1]
+				return m, nil
+			case "ctrl+b":
+				m.selectedTea = ""	
+				return m, nil
+			default:
+				m.table, cmd = m.table.Update(msg)
+				return m, cmd
+			}
+	case DataInitialized:
+		m.initialized = true
+		m.teaInventory = msg
+		return m, makeTable(m)
+	case InitialTable:
+		m.loading = false
+		m.table = table.Model(msg)
+		return m, nil
+	case spinner.TickMsg: 
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+	default:
+		return m, cmd
 	}
-	m.table, _ = m.table.Update(msg)
 	return m, nil
 }
 
 func (m model) View() string {
-	str := fmt.Sprintf("\n\n   %s Loading Tea Inventory\n\n", m.spinner.View())
-	if m.loading {
-		return str
-	}
-	if m.quitting {
-		return str + "\n"
+	if m.loading && !m.initialized {
+		return fmt.Sprintf("\n\n   %s Loading Tea Inventory\n\n", m.spinner.View())
 	}
 	if !m.loading && m.selectedTea == "" {
 		return baseStyle.Render(m.table.View()) + "\n"
 		
 	}
+	if !m.loading && m.selectedTea != "" {
 		return fmt.Sprintf("You selected %v", m.selectedTea)
+		
+	}
+	return ""
 }
 
-func initialModel() model {
+func initialModel(db *mongo.Client) model {
 	s := spinner.New()
 	s.Spinner = spinner.Points
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	return model{spinner: s, loading: true}
+	return model{spinner: s, loading: true, db: db}
+}
+
+type DataInitialized []TeaInventory
+
+func fetchInitialData(m model) tea.Cmd {
+	return func () tea.Msg {
+
+		collection := m.db.Database("TeaCo").Collection("Inventory")
+		cursor, collectionErr := collection.Find(context.Background(), bson.D{{}})
+		if collectionErr != nil {
+			log.Fatal(collectionErr)
+		}
+
+		var teaInventorySlice []TeaInventory
+
+		for cursor.Next(context.Background()) {
+			var teaInventoryItem TeaInventory
+			decodeErr := cursor.Decode(&teaInventoryItem)
+			if decodeErr != nil {
+				log.Fatal(decodeErr)
+			} 
+			teaInventorySlice = append(teaInventorySlice, teaInventoryItem)
+		}
+		return DataInitialized(teaInventorySlice)
+	}
+}
+
+type InitialTable table.Model
+func makeTable(m model) tea.Cmd {
+	return func () tea.Msg {
+		columnConfig := getColumnConfig()
+		columns, rows := getTableData(m.teaInventory, columnConfig)
+
+		// make the table
+		t := table.New(
+			table.WithColumns(columns),
+			table.WithRows(rows),
+			table.WithFocused(true),
+			table.WithHeight(10),
+		)
+
+		// make table styles
+		s := table.DefaultStyles()
+		s.Header = s.Header.
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			BorderBottom(true).
+			Bold(true)
+		s.Selected = s.Selected.
+			Foreground(lipgloss.Color("200")).
+			Background(lipgloss.Color("57")).
+			Bold(false)
+
+		// apply the styles to the table
+		t.SetStyles(s)
+		// m.table = t
+		return InitialTable(t)
+	}
 }
 
 type TeaInventory struct {
@@ -112,89 +185,18 @@ func main() {
       panic(mongoErr)
     }
   }()
-  // Send a ping to confirm a successful connection
-  if connectionErr := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); connectionErr != nil {
-    panic(connectionErr)
-  }
+  // // Send a ping to confirm a successful connection
+  // if connectionErr := client.Database("TeaCo").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); connectionErr != nil {
+  //   panic(connectionErr)
+  // }
   // fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 
-	collection := client.Database("TeaCo").Collection("Inventory")
-	cursor, collectionErr := collection.Find(context.Background(), bson.D{{}})
-	if collectionErr != nil {
-		log.Fatal(collectionErr)
-	}
-
-	var teaInventorySlice []TeaInventory
-
-	for cursor.Next(context.Background()) {
-		var teaInventoryItem TeaInventory
-		decodeErr := cursor.Decode(&teaInventoryItem)
-		if decodeErr != nil {
-			log.Fatal(decodeErr)
-		} 
-		teaInventorySlice = append(teaInventorySlice, teaInventoryItem)
-	}
-
-	// teaInventory, decodeErr := decodeJson("./teas.json")
-	// if decodeErr != nil {
-	// 	fmt.Printf("error decoding json %v\n", decodeErr)
-	// 	os.Exit(1)
-	// }
-	columnConfig := getColumnConfig()
-	columns, rows := getTableData(teaInventorySlice, columnConfig)
-
-	// make the table
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(10),
-	)
-
-	// make table styles
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(true)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("200")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-
-	// apply the styles to the table
-	t.SetStyles(s)
-	
-	// m := model{table: t, selectedTea: ""}
-
-	_, err := tea.NewProgram(initialModel()).Run()
+	_, err := tea.NewProgram(initialModel(client)).Run()
 	if err != nil {
 		fmt.Printf("error running tea app %v\n", err)
 		os.Exit(1)
 	}
 }
-
-// func decodeJson(filePath string) ([]TeaInventory, error) {
-
-// 	teaJson, osErr := os.ReadFile(filePath)
-// 	if osErr != nil {
-// 		return nil, fmt.Errorf("error reading file %v", osErr)
-// 	}
-
-// 	var teaData []TeaInventory
-	
-// 	jsonTeaData := []byte(teaJson)
-// 	isJsonValid := json.Valid(jsonTeaData)
-// 	if !isJsonValid {
-// 		return nil, errors.New("invalid json")
-// 	}
-// 	jsonErr := json.Unmarshal(jsonTeaData, &teaData)
-// 	if jsonErr != nil {
-// 		return nil, fmt.Errorf("failed to unmarshall json: %v", jsonErr)
-// 	}
-// 	return teaData, nil
-// }
 
 func getTableData(teaInventoryItems []TeaInventory, columnConfig map[string]ColumnConfig) ([]table.Column, []table.Row) {
 	// use the first item to generate columns
@@ -259,3 +261,24 @@ func getFieldByHeader(t TeaInventory, header string) string {
 		return ""
 	}
 }
+
+// func decodeJson(filePath string) ([]TeaInventory, error) {
+
+// 	teaJson, osErr := os.ReadFile(filePath)
+// 	if osErr != nil {
+// 		return nil, fmt.Errorf("error reading file %v", osErr)
+// 	}
+
+// 	var teaData []TeaInventory
+	
+// 	jsonTeaData := []byte(teaJson)
+// 	isJsonValid := json.Valid(jsonTeaData)
+// 	if !isJsonValid {
+// 		return nil, errors.New("invalid json")
+// 	}
+// 	jsonErr := json.Unmarshal(jsonTeaData, &teaData)
+// 	if jsonErr != nil {
+// 		return nil, fmt.Errorf("failed to unmarshall json: %v", jsonErr)
+// 	}
+// 	return teaData, nil
+// }
